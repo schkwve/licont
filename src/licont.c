@@ -47,6 +47,12 @@ int choose_hostname(char *buf, size_t len)
 	return 0;
 }
 
+void print_usage(char *filename)
+{
+	fprintf(stderr, "Usage: %s -u -1 -m . -c /bin/sh ~\n", filename);
+	exit(1);
+}
+
 int main(int argc, char **argv)
 {
 	struct child_config config = {0};
@@ -63,10 +69,10 @@ int main(int argc, char **argv)
 			config.argc = argc - last_optind - 1;
 			config.argv = &argv[argc - config.argc];
 			if (!config.argc) {
-				fprintf(stderr, "Usage: %s -u -1 -m . -c /bin/sh ~\n", argv[0]);
+				print_usage(argv[0]);
 			}
 			if (!config.mount_dir) {
-				fprintf(stderr, "Usage: %s -u -1 -m . -c /bin/sh ~\n", argv[0]);
+				print_usage(argv[0]);
 			}
 
 			char hostname[256] = {0};
@@ -84,11 +90,11 @@ int main(int argc, char **argv)
 		case 'u':
 			if (sscanf(optarg, "%d", &config.uid) != 1) {
 				fprintf(stderr, "Badly formatted uid: %s\n", optarg);
-				fprintf(stderr, "Usage: %s -u -1 -m . -c /bin/sh ~\n", argv[0]);
+				print_usage(argv[0]);
 			}
 			break;
 		default:
-			fprintf(stderr, "Usage: %s -u -1 -m . -c /bin/sh ~\n", argv[0]);;
+			print_usage(argv[0]);
 		}
 		last_optind = optind;
 	}
