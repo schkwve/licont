@@ -22,6 +22,8 @@
 #include <linux/capability.h>
 #include <linux/limits.h>
 
+#define STACK_SIZE (1024 * 1024)
+
 struct child_config {
 	int argc;
 	uid_t uid;
@@ -64,10 +66,21 @@ void print_usage(char *filename)
 	exit(1);
 }
 
+int resources(struct child_config *config)
+{
+	(void)config;
+	return 0;
+}
+
+int free_resources(struct child_config *config)
+{
+	(void)config;
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	struct child_config config = {0};
-	int err = 0;
 	int option = 0;
 	int sockets[2] = {0};
 	pid_t child_pid = 0;
@@ -97,7 +110,7 @@ int main(int argc, char **argv)
 			int major = -1;
 			int minor = -1;
 			if (sscanf(host.release, "%u.%u", &major, &minor) != 2) {
-				fprintf(stderr, "weird format (%s)\n", host.release)
+				fprintf(stderr, "weird format (%s)\n", host.release);
 				cleanup(sockets);
 				exit(1);
 			}
@@ -115,13 +128,35 @@ int main(int argc, char **argv)
 
 			char hostname[256] = {0};
 			if (choose_hostname(hostname, sizeof(hostname))) {
-				err = 1;
+				exit(1);
 			}
-
 			config.hostname = hostname;
 
+			if (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, sockets)) {
+				fprintf(stderr, "socketpair failed: %m\n");
+				exit(1);
+			}
+			if (fcntl(sockets[0], F_SETFD, FD_CLOEXEC)) {
+				fprintf(stderr, "fcntl failed: %m\n");
+				exit(1);
+			}
+
+			config.fd = sockets[1];
+
+			char *stack = malloc(STACK_SIZE);
+			if (!stack) {
+				fprintf(stderr, "[LICONT] malloc() failed\n");
+				exit(1);
+			}
+
+			if (resources(&config)) {
+				free_resources(&config);
+				free(stack);
+				exit(1);
+			}
+
 			cleanup(sockets);
-			return err;
+			exit(1);
 		case 'm':
 			config.mount_dir = optarg;
 			break;
