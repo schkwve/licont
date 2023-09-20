@@ -42,8 +42,19 @@ void cleanup(int *sockets)
 
 int choose_hostname(char *buf, size_t len)
 {
-	(void)buf;
-	(void)len;
+	static const char *one[] = {"exotic", "cherry", "roasted"};
+	static const char *two[] = {"king", "butters", "chicken"};
+	static const char *three[] = {"server", "china", "zeroone"};
+	struct timespec now = {0};
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	size_t ix = now.tv_nsec % 78;
+	if (ix < sizeof(three) / sizeof(*three)) {
+		snprintf(buf, len, "%05lx-%s", now.tv_sec, three[ix]);
+	} else {
+		ix -= sizeof(three) / sizeof(*three);
+		snprintf(buf, len, "%05lxc-%s-of-%s", now.tv_sec, two[ix % (sizeof(two) / sizeof(*two))], one[ix % (sizeof(two) / sizeof(*two))]);
+	}
 	return 0;
 }
 
