@@ -75,6 +75,33 @@ int main(int argc, char **argv)
 				print_usage(argv[0]);
 			}
 
+			fprintf(stderr, "[LICONT] Validating Linux version... ");
+			struct utsname host = {0};
+			if (uname(&host)) {
+				fprintf(stderr, "failed (%m)\n");
+				cleanup(sockets);
+				exit(1);
+			}
+
+			int major = -1;
+			int minor = -1;
+			if (sscanf(host.release, "%u.%u", &major, &minor) != 2) {
+				fprintf(stderr, "weird format (%s)\n", host.release)
+				cleanup(sockets);
+				exit(1);
+			}
+			if (major < 4) {
+				fprintf(stderr, "expected > 4.x.x (got %s)\n", host.release);
+				cleanup(sockets);
+				exit(1);
+			}
+			if(strcmp("x86_64", host.machine)) {
+				fprintf(stderr, "expected x86_64 (got %s)\n", host.machine);
+				cleanup(sockets);
+				exit(1);
+			}
+			fprintf(stderr, "%s-%s\n", host.release, host.machine);
+
 			char hostname[256] = {0};
 			if (choose_hostname(hostname, sizeof(hostname))) {
 				err = 1;
